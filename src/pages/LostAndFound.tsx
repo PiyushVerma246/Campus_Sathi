@@ -6,11 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, MapPin, Calendar, Tag, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search, MapPin, Calendar, AlertCircle, CheckCircle2, Plus, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
-const items = [
+const initialItems = [
     {
         id: 1,
         title: "MacBook Pro Charger",
@@ -41,7 +46,7 @@ const items = [
         location: "Cafeteria",
         date: "2024-03-08",
         status: "Resolved",
-        image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=800", // Generic image
+        image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=800",
         description: "Dropped my ID card somewhere during lunch. Name: Sarah J."
     },
     {
@@ -80,8 +85,59 @@ const items = [
 ];
 
 export const LostAndFound = () => {
+    const [items, setItems] = useState(initialItems);
     const [activeTab, setActiveTab] = useState("All");
     const [searchQuery, setSearchQuery] = useState("");
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [newItem, setNewItem] = useState({
+        title: "",
+        type: "Lost",
+        category: "Electronics",
+        location: "",
+        date: new Date().toISOString().split('T')[0],
+        description: "",
+        image: "" // Optional: In a real app, this would be a file upload
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setNewItem(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectChange = (name: string, value: string) => {
+        setNewItem(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        // Simulate API call
+        setTimeout(() => {
+            const item = {
+                id: items.length + 1,
+                ...newItem,
+                status: "Open",
+                image: newItem.image || "https://images.unsplash.com/photo-1555664424-778a1e501b0d?auto=format&fit=crop&q=80&w=800" // Default image
+            };
+
+            setItems([item, ...items]);
+            setIsSubmitting(false);
+            setIsDialogOpen(false);
+            setNewItem({
+                title: "",
+                type: "Lost",
+                category: "Electronics",
+                location: "",
+                date: new Date().toISOString().split('T')[0],
+                description: "",
+                image: ""
+            });
+            toast.success("Item reported successfully!");
+        }, 1000);
+    };
 
     const filteredItems = items.filter(item => {
         const matchesTab = activeTab === "All" ? true : item.type === activeTab;
@@ -113,10 +169,166 @@ export const LostAndFound = () => {
                         </p>
 
                         <div className="flex justify-center gap-4">
-                            <Button size="lg" className="rounded-full h-14 px-8 text-base font-bold bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20">
-                                <Plus className="h-5 w-5 mr-2" />
-                                Report an Item
-                            </Button>
+                            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button size="lg" className="rounded-full h-14 px-8 text-base font-bold bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20">
+                                        <Plus className="h-5 w-5 mr-2" />
+                                        Report an Item
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh]">
+                                    <DialogHeader>
+                                        <DialogTitle>Report an Item</DialogTitle>
+                                        <DialogDescription>
+                                            Fill in the details about the item you lost or found.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="type">I...</Label>
+                                            <Select
+                                                value={newItem.type}
+                                                onValueChange={(val) => handleSelectChange("type", val)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select Type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Lost">Lost an item</SelectItem>
+                                                    <SelectItem value="Found">Found an item</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="title">Item Name</Label>
+                                            <Input
+                                                id="title"
+                                                name="title"
+                                                placeholder="e.g. Blue Airpods Max"
+                                                value={newItem.title}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="category">Category</Label>
+                                                <Select
+                                                    value={newItem.category}
+                                                    onValueChange={(val) => handleSelectChange("category", val)}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Category" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Electronics">Electronics</SelectItem>
+                                                        <SelectItem value="Accessories">Accessories</SelectItem>
+                                                        <SelectItem value="Documents">Documents</SelectItem>
+                                                        <SelectItem value="Books">Books</SelectItem>
+                                                        <SelectItem value="Clothing">Clothing</SelectItem>
+                                                        <SelectItem value="Other">Other</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="date">Date</Label>
+                                                <Input
+                                                    id="date"
+                                                    name="date"
+                                                    type="date"
+                                                    value={newItem.date}
+                                                    onChange={handleInputChange}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="location">Location</Label>
+                                            <Input
+                                                id="location"
+                                                name="location"
+                                                placeholder="e.g. Library, 2nd floor"
+                                                value={newItem.location}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="description">Description</Label>
+                                            <Textarea
+                                                id="description"
+                                                name="description"
+                                                placeholder="Provide more details to help identify the item..."
+                                                value={newItem.description}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label>Image</Label>
+                                            <div className="flex items-center gap-4">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => document.getElementById('image-upload')?.click()}
+                                                    className="w-full border-dashed"
+                                                >
+                                                    {newItem.image ? "Change Image" : "Upload Image"}
+                                                </Button>
+                                                <input
+                                                    id="image-upload"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            const imageUrl = URL.createObjectURL(file);
+                                                            setNewItem(prev => ({ ...prev, image: imageUrl }));
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            {newItem.image && (
+                                                <div className="relative mt-2 w-full h-40 rounded-lg overflow-hidden border border-border">
+                                                    <img
+                                                        src={newItem.image}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        className="absolute top-2 right-2 h-6 w-6 p-0 rounded-full"
+                                                        onClick={() => setNewItem(prev => ({ ...prev, image: "" }))}
+                                                    >
+                                                        ×
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <DialogFooter>
+                                            <Button type="submit" disabled={isSubmitting}>
+                                                {isSubmitting ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Submitting...
+                                                    </>
+                                                ) : (
+                                                    "Submit Report"
+                                                )}
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     </ScrollReveal>
                 </div>
@@ -153,7 +365,7 @@ export const LostAndFound = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {filteredItems.map((item, index) => (
-                            <ScrollReveal key={item.id} delay={index * 0.05}>
+                            <ScrollReveal key={item.id} delay={index * 0.05} width="100%">
                                 <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
                                     <Card className="bg-foreground/[0.02] border-foreground/10 backdrop-blur-sm overflow-hidden rounded-[2rem] hover:border-primary/20 transition-all duration-300 group h-full flex flex-col">
                                         <div className="relative h-56 overflow-hidden">

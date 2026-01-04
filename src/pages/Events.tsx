@@ -117,7 +117,7 @@ export const Events = () => {
                 <div className="max-w-7xl mx-auto">
                     <ScrollReveal delay={0.2}>
                         <Tabs defaultValue="All" className="w-full mb-12" onValueChange={setActiveTab}>
-                            <TabsList className="bg-foreground/5 border border-foreground/10 rounded-full h-14 p-1 inline-flex w-full md:w-auto overflow-x-auto no-scrollbar">
+                            <TabsList className="bg-foreground/5 border border-foreground/10 rounded-full h-14 p-1 inline-flex w-full md:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                                 {categories.map((cat) => (
                                     <TabsTrigger
                                         key={cat}
